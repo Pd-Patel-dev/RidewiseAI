@@ -13,53 +13,70 @@ from src.database.ride_repository import get_all_rides
 st.set_page_config(page_title="Ride History", page_icon="📋", layout="wide")
 init_db()
 
+NO_DATA_MESSAGE = (
+    "No rides saved yet. Go to Fare Calculator and save your first ride."
+)
+
+
 st.title("Ride History")
-st.caption("All rides saved from the Fare Calculator.")
+st.caption("Browse saved rides and filter by trip type, city, or airport trips.")
 
 rides_df = get_all_rides()
 
 if rides_df.empty:
-    st.info("No rides saved yet. Go to Fare Calculator, calculate a fare, and click Save Ride.")
+    st.info(NO_DATA_MESSAGE)
 else:
-    total_rides = len(rides_df)
-    total_revenue = rides_df["fare_charged"].sum()
-    total_expense = rides_df["total_expense"].sum()
-    total_profit = rides_df["actual_profit"].fillna(0).sum()
-    total_expense_miles = rides_df["expense_miles"].sum()
+    st.markdown("#### Filters")
+    filter_col1, filter_col2, filter_col3 = st.columns(3)
 
-    profit_per_expense_values = rides_df["profit_per_expense_mile"].dropna()
-    avg_profit_per_expense_mile = (
-        profit_per_expense_values.mean() if not profit_per_expense_values.empty else 0.0
-    )
+    trip_types = ["All"] + sorted(rides_df["trip_type"].unique().tolist())
+    cities = ["All"] + sorted(rides_df["city"].unique().tolist())
+    airport_options = ["All", "Yes", "No"]
 
-    row1 = st.columns(3)
-    row1[0].metric("Total Rides", total_rides)
-    row1[1].metric("Total Revenue", f"${total_revenue:,.2f}")
-    row1[2].metric("Total Expense", f"${total_expense:,.2f}")
+    with filter_col1:
+        selected_trip_type = st.selectbox("Trip type", trip_types)
+    with filter_col2:
+        selected_city = st.selectbox("City", cities)
+    with filter_col3:
+        selected_airport = st.selectbox("Airport trip", airport_options)
 
-    row2 = st.columns(3)
-    row2[0].metric("Total Profit", f"${total_profit:,.2f}")
-    row2[1].metric("Total Expense Miles", f"{total_expense_miles:,.1f}")
-    row2[2].metric("Avg Profit / Expense Mile", f"${avg_profit_per_expense_mile:,.2f}")
+    filtered_df = rides_df.copy()
 
-    st.divider()
-    st.subheader("Saved Rides")
+    if selected_trip_type != "All":
+        filtered_df = filtered_df[filtered_df["trip_type"] == selected_trip_type]
+    if selected_city != "All":
+        filtered_df = filtered_df[filtered_df["city"] == selected_city]
+    if selected_airport == "Yes":
+        filtered_df = filtered_df[filtered_df["is_airport"]]
+    elif selected_airport == "No":
+        filtered_df = filtered_df[~filtered_df["is_airport"]]
 
-    display_columns = [
-        "created_at",
-        "trip_type",
-        "city",
-        "one_way_miles",
-        "customer_miles",
-        "expense_miles",
-        "fare_charged",
-        "total_expense",
-        "actual_profit",
-        "profit_per_expense_mile",
-        "profit_per_customer_mile",
-    ]
-    st.dataframe(
-        rides_df[display_columns],
-        use_container_width=True,
-        hide_index=True,
-    )
+    if filtered_df.empty:
+        st.warning("No rides match your filters. Try changing the filter options.")
+    else:
+        st.subheader("Saved Rides")
+
+        display_columns = [
+            "created_at",
+            "trip_type",
+            "city",
+            "is_airport",
+            "one_way_miles",
+            "customer_miles",
+            "expense_miles",
+            "fuel_cost",
+            "maintenance_cost",
+            "tolls",
+            "airport_fee",
+            "total_expense",
+            "recommended_fare",
+            "fare_charged",
+            "actual_profit",
+            "profit_per_expense_mile",
+            "profit_per_customer_mile",
+        ]
+        st.dataframe(
+            filtered_df[display_columns],
+            use_container_width=True,
+            hide_index=True,
+        )
