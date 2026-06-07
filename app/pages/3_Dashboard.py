@@ -61,7 +61,3 @@ else:
         "Profit charts use rides where a fare was entered. "
         "Rides without fare charged may show $0 profit."
     )
-
-    st.divider()
-    st.subheader("All ride data")
-    st.dataframe(rides_df, use_container_width=True, hide_index=True)
