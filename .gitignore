@@ -26,6 +26,8 @@ htmlcov/
 # Data & models (keep folders, ignore large/local files)
 data/raw/*
 !data/raw/.gitkeep
+data/uploads/*
+!data/uploads/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
 models/*
